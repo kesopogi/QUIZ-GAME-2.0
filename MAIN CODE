@@ -1,0 +1,308 @@
+import customtkinter
+import random
+
+customtkinter.set_appearance_mode("System")
+customtkinter.set_default_color_theme("green")
+
+app = customtkinter.CTk()
+app.geometry("400x240")
+app.title("QUIZ GAME")  # Set the window title here
+
+# List of motivational quotes
+quotes = [
+    "Keep going. Everything you need will come to you at the perfect time.",
+    "Success is not final, failure is not fatal: It is the courage to continue that counts.",
+    "You are braver than you believe, stronger than you seem, and smarter than you think.",
+    "The future belongs to those who believe in the beauty of their dreams."
+]
+
+# List to store leaderboard (name, score)
+leaderboard = []
+
+# Set initial score and other variables
+score = 0
+current_question = 0
+total_time = 60  # Total quiz time: 60 seconds
+time_left = total_time  # Initialize time_left as 60 seconds
+timer_running = False
+
+# Updated questions list with multiple choice and true/false questions
+questions = [
+    {
+        "question": "Which planet is known as the Red Planet?", 
+        "options": ["Earth", "Mars", "Jupiter", "Saturn"], 
+        "answer": "Mars"
+    },
+    {
+        "question": "The Earth is flat.",
+        "options": ["True", "False"], 
+        "answer": "False"
+    },
+    {
+        "question": "What is the capital of Japan?", 
+        "options": ["Beijing", "Seoul", "Tokyo", "Bangkok"], 
+        "answer": "Tokyo"
+    },
+    {
+        "question": "Water boils at 100°C at sea level.", 
+        "options": ["True", "False"], 
+        "answer": "True"
+    },
+    {
+        "question": "Who wrote the play 'Romeo and Juliet'?", 
+        "options": ["Shakespeare", "Dickens", "Hemingway", "Austen"], 
+        "answer": "Shakespeare"
+    },
+    {
+        "question": "What is the largest ocean on Earth?", 
+        "options": ["Atlantic Ocean", "Indian Ocean", "Pacific Ocean", "Arctic Ocean"], 
+        "answer": "Pacific Ocean"
+    },
+    {
+        "question": "The Sun is a star.", 
+        "options": ["True", "False"], 
+        "answer": "True"
+    }
+]
+
+# Function to start the quiz
+def start_quiz():
+    global score, current_question, time_left, timer_running
+    score = 0
+    current_question = 0
+    time_left = total_time  # Reset time to 60 seconds
+    timer_running = True  # Start the timer
+    name = name_entry.get()  # Get user name input
+    if name:
+        welcome_frame.grid_forget()
+        show_question()
+        start_timer()  # Start the timer countdown
+    else:
+        name_error_label.grid(row=2, column=0, padx=70, pady=10, sticky="nsew")  # Show error if no name is entered
+
+def show_question():
+    global current_question
+    quiz_frame.grid(row=0, column=0, sticky="nsew")
+
+    question_data = questions[current_question]
+    question_text = question_data["question"]
+    options = question_data["options"]
+
+    question_label.configure(text=question_text)
+    
+    if len(options) == 2:
+        for i, option in enumerate(options):
+            option_buttons[i].configure(text=option, command=lambda option=option: check_answer(option))
+        for i in range(2, 4):
+            option_buttons[i].grid_forget()
+    else:
+        for i, option in enumerate(options):
+            option_buttons[i].configure(text=option, command=lambda option=option: check_answer(option))
+        for i in range(2, 4):
+            option_buttons[i].grid(row=i+2, column=0, padx=50, pady=10, sticky="nsew")
+
+    feedback_label.grid_forget()
+
+def check_answer(option):
+    global current_question, score
+    correct_answer = questions[current_question]["answer"]
+    if option is not None:
+        if option == correct_answer:
+            score += 1
+        answer_feedback(option == correct_answer)
+
+    current_question += 1
+    if current_question < len(questions):
+        show_question()  # Show the next question
+    else:
+        end_quiz()  # End the quiz if all questions have been answered
+
+def answer_feedback(is_correct):
+    feedback_text = "Correct!" if is_correct else "Wrong!"
+    feedback_label.configure(text=feedback_text)
+    feedback_label.grid(row=2, column=0, padx=70, pady=20, sticky="nsew")
+    app.after(2000, lambda: feedback_label.grid_forget())  # Hide feedback after 2 seconds
+
+def start_timer():
+    global time_left, timer_running
+    if time_left > 0 and timer_running:
+        timer_label.configure(text=f"Time left: {time_left} seconds")
+        time_left -= 1
+        app.after(1000, start_timer)  # Call start_timer every 1000ms (1 second)
+    elif time_left == 0:
+        end_quiz()  # End the quiz when time is up
+
+def end_quiz():
+    global timer_running
+    timer_running = False  # Stop the timer
+    quiz_frame.grid_forget()
+    end_frame.grid(row=0, column=0, sticky="nsew")
+    random_quote = random.choice(quotes)
+    end_label.configure(text=f"Quiz Completed! Your score: {score}/{len(questions)}\n\nQuote: {random_quote}")
+
+    # Save the score in the leaderboard
+    leaderboard.append((name_entry.get(), score))  # Add name and score to leaderboard
+
+    # Show leaderboard
+    leaderboard_text = "\n".join([f"{entry[0]}: {entry[1]}" for entry in leaderboard])
+    leaderboard_label.configure(text=f"Leaderboard:\n{leaderboard_text}")
+
+def go_back_to_menu():
+    end_frame.grid_forget()
+    welcome_frame.grid(row=0, column=0, sticky="nsew")
+
+def view_leaderboard():
+    welcome_frame.grid_forget()
+    leaderboard_frame.grid(row=0, column=0, sticky="nsew")
+    
+    # Refresh leaderboard display
+    refresh_leaderboard()
+
+def go_back_from_leaderboard():
+    leaderboard_frame.grid_forget()
+    welcome_frame.grid(row=0, column=0, sticky="nsew")
+
+def refresh_leaderboard():
+    # Convert the leaderboard list into a formatted string
+    leaderboard_text = "\n".join([f"{entry[0]}: {entry[1]}" for entry in leaderboard])
+    
+    # Update the leaderboard_display label with the new leaderboard
+    leaderboard_display.configure(text=f"Leaderboard:\n{leaderboard_text}")
+
+# New Frame for Creating Quiz
+def create_quiz():
+    welcome_frame.grid_forget()
+    create_quiz_frame.grid(row=0, column=0, sticky="nsew")
+
+def go_back_from_create_quiz():
+    create_quiz_frame.grid_forget()
+    welcome_frame.grid(row=0, column=0, sticky="nsew")
+
+def save_quiz():
+    new_question = question_entry.get()
+    option1 = option1_entry.get()
+    option2 = option2_entry.get()
+    option3 = option3_entry.get()
+    option4 = option4_entry.get()
+    correct_answer = correct_answer_entry.get()
+
+    if new_question and option1 and option2 and correct_answer:
+        new_quiz = {
+            "question": new_question,
+            "options": [option1, option2, option3, option4],
+            "answer": correct_answer
+        }
+        questions.append(new_quiz)
+        go_back_from_create_quiz()
+
+# Welcome page frame with name input
+welcome_frame = customtkinter.CTkFrame(app)
+welcome_frame.grid(row=0, column=0, sticky="nsew")
+
+welcome_label = customtkinter.CTkLabel(welcome_frame, text="Welcome to the Quiz Game", font=("Times New Roman", 20, "bold"))
+welcome_label.grid(row=0, column=0, padx=70, pady=60, sticky="nsew")
+
+name_label = customtkinter.CTkLabel(welcome_frame, text="Enter Your Name:", font=("Times New Roman", 16, "bold"))
+name_label.grid(row=1, column=0, padx=70, pady=10, sticky="nsew")
+
+name_entry = customtkinter.CTkEntry(welcome_frame, font=("Times New Roman", 16))
+name_entry.grid(row=2, column=0, padx=70, pady=10, sticky="nsew")
+
+name_error_label = customtkinter.CTkLabel(welcome_frame, text="Please enter a name", text_color="red")
+name_error_label.grid_forget()
+
+start_button = customtkinter.CTkButton(welcome_frame, text="Start Quiz", font=("Times New Roman", 16), command=start_quiz)
+start_button.grid(row=3, column=0, padx=70, pady=10, sticky="nsew")
+
+leaderboard_button = customtkinter.CTkButton(welcome_frame, text="Leaderboard", font=("Times New Roman", 16), command=view_leaderboard)
+leaderboard_button.grid(row=4, column=0, padx=70, pady=10, sticky="nsew")
+
+create_quiz_button = customtkinter.CTkButton(welcome_frame, text="Create New Question", font=("Times New Roman", 16), command=create_quiz)
+create_quiz_button.grid(row=5, column=0, padx=70, pady=10, sticky="nsew")
+
+# Frame for quiz questions
+quiz_frame = customtkinter.CTkFrame(app)
+
+question_label = customtkinter.CTkLabel(quiz_frame, text="", font=("Times New Roman", 16))
+question_label.grid(row=0, column=0, padx=70, pady=20, sticky="nsew")
+
+option_buttons = [
+    customtkinter.CTkButton(quiz_frame, text="", font=("Times New Roman", 14)),
+    customtkinter.CTkButton(quiz_frame, text="", font=("Times New Roman", 14)),
+    customtkinter.CTkButton(quiz_frame, text="", font=("Times New Roman", 14)),
+    customtkinter.CTkButton(quiz_frame, text="", font=("Times New Roman", 14)),
+]
+
+for i, button in enumerate(option_buttons):
+    button.grid(row=i+1, column=0, padx=50, pady=10, sticky="nsew")
+
+feedback_label = customtkinter.CTkLabel(quiz_frame, text="", font=("Times New Roman", 14, "bold"))
+feedback_label.grid_forget()
+
+timer_label = customtkinter.CTkLabel(quiz_frame, text="Time left: 60 seconds", font=("Times New Roman", 14, "bold"))
+timer_label.grid(row=5, column=0, padx=50, pady=10, sticky="nsew")
+
+# Frame for end of quiz
+end_frame = customtkinter.CTkFrame(app)
+
+end_label = customtkinter.CTkLabel(end_frame, text="Quiz Completed!", font=("Times New Roman", 16, "bold"))
+end_label.grid(row=0, column=0, padx=70, pady=20, sticky="nsew")
+
+back_button = customtkinter.CTkButton(end_frame, text="Back to Menu", font=("Times New Roman", 16), command=go_back_to_menu)
+back_button.grid(row=1, column=0, padx=70, pady=10, sticky="nsew")
+
+# Frame for leaderboard
+leaderboard_frame = customtkinter.CTkFrame(app)
+
+leaderboard_display = customtkinter.CTkLabel(leaderboard_frame, text="Leaderboard", font=("Times New Roman", 16, "bold"))
+leaderboard_display.grid(row=0, column=0, padx=70, pady=20, sticky="nsew")
+
+back_from_leaderboard_button = customtkinter.CTkButton(leaderboard_frame, text="Back", font=("Times New Roman", 16), command=go_back_from_leaderboard)
+back_from_leaderboard_button.grid(row=1, column=0, padx=70, pady=10, sticky="nsew")
+
+# Frame for creating quiz
+create_quiz_frame = customtkinter.CTkFrame(app)
+
+question_label_create_quiz = customtkinter.CTkLabel(create_quiz_frame, text="Enter Question:", font=("Times New Roman", 16, "bold"))
+question_label_create_quiz.grid(row=0, column=0, padx=70, pady=10, sticky="nsew")
+
+question_entry = customtkinter.CTkEntry(create_quiz_frame, font=("Times New Roman", 14))
+question_entry.grid(row=1, column=0, padx=70, pady=10, sticky="nsew")
+
+option1_label = customtkinter.CTkLabel(create_quiz_frame, text="Option 1:", font=("Times New Roman", 14))
+option1_label.grid(row=2, column=0, padx=70, pady=10, sticky="nsew")
+
+option1_entry = customtkinter.CTkEntry(create_quiz_frame, font=("Times New Roman", 14))
+option1_entry.grid(row=3, column=0, padx=70, pady=10, sticky="nsew")
+
+option2_label = customtkinter.CTkLabel(create_quiz_frame, text="Option 2:", font=("Times New Roman", 14))
+option2_label.grid(row=4, column=0, padx=70, pady=10, sticky="nsew")
+
+option2_entry = customtkinter.CTkEntry(create_quiz_frame, font=("Times New Roman", 14))
+option2_entry.grid(row=5, column=0, padx=70, pady=10, sticky="nsew")
+
+option3_label = customtkinter.CTkLabel(create_quiz_frame, text="Option 3:", font=("Times New Roman", 14))
+option3_label.grid(row=6, column=0, padx=70, pady=10, sticky="nsew")
+
+option3_entry = customtkinter.CTkEntry(create_quiz_frame, font=("Times New Roman", 14))
+option3_entry.grid(row=7, column=0, padx=70, pady=10, sticky="nsew")
+
+option4_label = customtkinter.CTkLabel(create_quiz_frame, text="Option 4:", font=("Times New Roman", 14))
+option4_label.grid(row=8, column=0, padx=70, pady=10, sticky="nsew")
+
+option4_entry = customtkinter.CTkEntry(create_quiz_frame, font=("Times New Roman", 14))
+option4_entry.grid(row=9, column=0, padx=70, pady=10, sticky="nsew")
+
+correct_answer_label = customtkinter.CTkLabel(create_quiz_frame, text="Correct Answer:", font=("Times New Roman", 14))
+correct_answer_label.grid(row=10, column=0, padx=70, pady=10, sticky="nsew")
+
+correct_answer_entry = customtkinter.CTkEntry(create_quiz_frame, font=("Times New Roman", 14))
+correct_answer_entry.grid(row=11, column=0, padx=70, pady=10, sticky="nsew")
+
+save_button = customtkinter.CTkButton(create_quiz_frame, text="Save Question", font=("Times New Roman", 16), command=save_quiz)
+save_button.grid(row=12, column=0, padx=70, pady=10, sticky="nsew")
+
+back_from_create_quiz_button = customtkinter.CTkButton(create_quiz_frame, text="Back", font=("Times New Roman", 16), command=go_back_from_create_quiz)
+back_from_create_quiz_button.grid(row=13, column=0, padx=70, pady=10, sticky="nsew")
+
+app.mainloop()
